@@ -36,6 +36,7 @@ func CreateInstance() (*lib.ChromeInstance, error) {
 
 	// Add WebSocket URL to map
 	mu.Lock()
+	wsUrlChannels <- wsUrl
 	instanceCloseMap[wsUrl] = instance.Close
 	mu.Unlock()
 	return instance, nil
