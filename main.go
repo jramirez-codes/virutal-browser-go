@@ -39,6 +39,7 @@ func CreateInstance() (*lib.ChromeInstance, error) {
 	wsUrlChannels <- wsUrl
 	instanceCloseMap[wsUrl] = instance.Close
 	mu.Unlock()
+
 	return instance, nil
 }
 
@@ -53,6 +54,12 @@ func main() {
 	apiPort := ":8080"
 	http.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
 		lib.GetBrowserInstanceUrl(wsUrlChannels, w, r)
+
+		// Create New Instance N+1 (Preload)
+		_, err := CreateInstance()
+		if err != nil {
+			log.Fatalf("Failed to create instance: %v", err)
+		}
 	})
 
 	http.HandleFunc("/kill", func(w http.ResponseWriter, r *http.Request) {

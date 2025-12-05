@@ -37,7 +37,9 @@ func GetBrowserInstanceUrl(ch chan string, w http.ResponseWriter, r *http.Reques
 	}
 
 	// Get WebSocket URL
+	mu.RLock()
 	WsUrl := <-ch
+	mu.RUnlock()
 
 	response := Response{
 		Success: true,
@@ -58,9 +60,10 @@ func KillBrowserInstance(ch chan string, instanceCloseMap map[string]func() erro
 	url := r.URL.Query().Get("url")
 
 	// Kill instance
-	mu.RLock()
-	if instanceCloseFunc, ok := instanceClose[url]; ok {
+	mu.Lock()
+	if instanceCloseFunc, ok := instanceCloseMap[url]; ok {
 		if err := instanceCloseFunc(); err != nil {
+			mu.Unlock()
 			response := Response{
 				Success: false,
 				Message: "Failed to kill browser instance",
@@ -68,9 +71,9 @@ func KillBrowserInstance(ch chan string, instanceCloseMap map[string]func() erro
 			json.NewEncoder(w).Encode(response)
 			return
 		}
-		delete(instanceClose, url)
+		delete(instanceCloseMap, url)
 	}
-	mu.RUnlock()
+	mu.Unlock()
 
 	response := Response{
 		Success: true,
