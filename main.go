@@ -53,7 +53,7 @@ func main() {
 	// API Server - Register routes
 	apiPort := ":8080"
 	http.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
-		lib.GetBrowserInstanceUrl(wsUrlChannels, w, r)
+		lib.GetBrowserInstanceUrl(wsUrlChannels, &mu, w, r)
 
 		// Create New Instance N+1 (Preload)
 		_, err := CreateInstance()
@@ -63,7 +63,7 @@ func main() {
 	})
 
 	http.HandleFunc("/kill", func(w http.ResponseWriter, r *http.Request) {
-		lib.KillBrowserInstance(wsUrlChannels, instanceCloseMap, w, r)
+		lib.KillBrowserInstance(&mu, instanceCloseMap, w, r)
 	})
 
 	log.Printf("Server starting on http://localhost%s", apiPort)

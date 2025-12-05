@@ -13,13 +13,8 @@ type Response struct {
 	WsUrl   string `json:"wsUrl"`
 }
 
-var (
-	instanceClose = make(map[string]func() error)
-	mu            sync.RWMutex
-)
-
 // Get Browser Instance URL
-func GetBrowserInstanceUrl(ch chan string, w http.ResponseWriter, r *http.Request) {
+func GetBrowserInstanceUrl(ch chan string, mu *sync.RWMutex, w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -50,7 +45,7 @@ func GetBrowserInstanceUrl(ch chan string, w http.ResponseWriter, r *http.Reques
 	json.NewEncoder(w).Encode(response)
 }
 
-func KillBrowserInstance(ch chan string, instanceCloseMap map[string]func() error, w http.ResponseWriter, r *http.Request) {
+func KillBrowserInstance(mu *sync.RWMutex, instanceCloseMap map[string]func() error, w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
