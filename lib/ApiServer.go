@@ -32,9 +32,9 @@ func GetBrowserInstanceUrl(ch chan string, mu *sync.RWMutex, w http.ResponseWrit
 	}
 
 	// Get WebSocket URL
-	mu.RLock()
+	mu.Lock()
 	WsUrl := <-ch
-	mu.RUnlock()
+	mu.Unlock()
 
 	response := Response{
 		Success: true,
