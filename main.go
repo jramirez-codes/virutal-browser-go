@@ -12,9 +12,9 @@ import (
 
 var (
 	instanceCloseMap = make(map[string]func() error)
+	wsUrlChannels    = make(chan string)
 	mu               sync.RWMutex
 )
-var wsUrlChannels = make(chan string)
 
 func CreateInstance() (*browser.ChromeInstance, error) {
 	// Get Available Port
