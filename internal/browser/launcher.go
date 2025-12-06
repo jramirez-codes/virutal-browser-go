@@ -6,11 +6,13 @@ import (
 	"os"
 	"os/exec"
 	"time"
+
+	"virtual-browser/internal/util/browserUtil"
 )
 
 // LaunchChrome starts a Chrome instance with CDP enabled
-func LaunchChrome(port int, headless bool) (*ChromeInstance, error) {
-	chromePath := GetChromePath()
+func LaunchChrome(port int) (*ChromeInstance, error) {
+	chromePath := browserUtil.GetChromePath()
 	if chromePath == "" {
 		return nil, fmt.Errorf("Chrome/Chromium not found. Please install Chrome or set CHROME_PATH environment variable")
 	}
@@ -22,6 +24,10 @@ func LaunchChrome(port int, headless bool) (*ChromeInstance, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp directory: %w", err)
 	}
+
+	// Select random user agent
+	userAgent := browserUtil.GenerateRandomUserAgent()
+	log.Printf("Using User-Agent: %s", userAgent)
 
 	// Chrome arguments
 	args := []string{
@@ -54,10 +60,8 @@ func LaunchChrome(port int, headless bool) (*ChromeInstance, error) {
 		"--use-mock-keychain",
 		fmt.Sprintf("--user-data-dir=%s", userDataDir),
 		"--remote-debugging-address=0.0.0.0",
-	}
-
-	if headless {
-		args = append(args, "--headless=new")
+		"--headless=new",
+		fmt.Sprintf("--user-agent=%s", userAgent),
 	}
 
 	// Add about:blank as initial page

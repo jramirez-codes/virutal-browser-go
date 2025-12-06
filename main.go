@@ -22,10 +22,9 @@ func CreateInstance() (*browser.ChromeInstance, error) {
 	if err != nil {
 		return nil, err
 	}
-	headless := true
 
 	// Get Chrome Instance
-	instance, err := browser.LaunchChrome(startPort, headless)
+	instance, err := browser.LaunchChrome(startPort)
 	if err != nil {
 		return nil, err
 	}
