@@ -28,8 +28,8 @@ The system consists of three main components:
 
 1.  **Clone the Repository**
     ```bash
-    git clone https://github.com/yourusername/google-browser-go.git
-    cd google-browser-go
+    git clone git@github.com:jramirez-codes/virutal-browser-go.git
+    cd vitural-browser-go
     ```
 
 2.  **Install Go Dependencies**
@@ -40,8 +40,8 @@ The system consists of three main components:
 3.  **Configure Nginx**
     Copy the provided `nginx.conf` to your Nginx configuration directory or include it in your main `nginx.conf`.
     ```bash
-    sudo cp nginx.conf /etc/nginx/sites-available/google-browser-go
-    sudo ln -s /etc/nginx/sites-available/google-browser-go /etc/nginx/sites-enabled/
+    sudo cp nginx.conf /etc/nginx/sites-available/virutal-browser-go
+    sudo ln -s /etc/nginx/sites-available/virutal-browser-go /etc/nginx/sites-enabled/
     sudo nginx -t
     sudo systemctl reload nginx
     ```
