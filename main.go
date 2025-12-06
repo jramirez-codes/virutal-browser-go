@@ -45,13 +45,7 @@ func CreateInstance() (*browser.ChromeInstance, error) {
 	return instance, nil
 }
 
-func main() {
-	// Create Inital Instance N+1
-	_, err := CreateInstance()
-	if err != nil {
-		log.Fatalf("Failed to create instance: %v", err)
-	}
-
+func StartApiServer() {
 	// API Server - Register routes
 	apiPort := ":8080"
 	http.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
@@ -75,6 +69,19 @@ func main() {
 	if err := http.ListenAndServe(apiPort, nil); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func main() {
+	// Create Inital Instance N+1
+	go func() {
+		_, err := CreateInstance()
+		if err != nil {
+			log.Fatalf("Failed to create instance: %v", err)
+		}
+	}()
+
+	// Start API Server
+	go StartApiServer()
 
 	// Keep running until interrupted
 	select {}
