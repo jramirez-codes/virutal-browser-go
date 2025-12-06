@@ -5,25 +5,27 @@ import (
 	"net/http"
 	"sync"
 
-	"go/browser/lib"
+	"virtual-browser/internal/api"
+	"virtual-browser/internal/browser"
+	"virtual-browser/internal/util"
 )
 
 var (
 	instanceCloseMap = make(map[string]func() error)
-	wsUrlChannels    = make(chan string, 1000)
 	mu               sync.RWMutex
 )
+var wsUrlChannels = make(chan string)
 
-func CreateInstance() (*lib.ChromeInstance, error) {
+func CreateInstance() (*browser.ChromeInstance, error) {
 	// Get Available Port
-	startPort, err := lib.GetPort()
+	startPort, err := util.GetPort()
 	if err != nil {
 		return nil, err
 	}
 	headless := true
 
 	// Get Chrome Instance
-	instance, err := lib.LaunchChrome(startPort, headless)
+	instance, err := browser.LaunchChrome(startPort, headless)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +55,7 @@ func main() {
 	// API Server - Register routes
 	apiPort := ":8080"
 	http.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
-		lib.GetBrowserInstanceUrl(wsUrlChannels, &mu, w, r)
+		api.GetBrowserInstanceUrl(wsUrlChannels, w, r)
 
 		// Create New Instance N+1 (Preload)
 		_, err := CreateInstance()
@@ -63,7 +65,7 @@ func main() {
 	})
 
 	http.HandleFunc("/kill", func(w http.ResponseWriter, r *http.Request) {
-		lib.KillBrowserInstance(&mu, instanceCloseMap, w, r)
+		api.KillBrowserInstance(&mu, instanceCloseMap, w, r)
 	})
 
 	log.Printf("Server starting on http://localhost%s", apiPort)
