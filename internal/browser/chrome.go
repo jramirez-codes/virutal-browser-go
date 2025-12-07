@@ -17,7 +17,7 @@ type ChromeInstance struct {
 }
 
 // waitForChrome waits for Chrome to be ready
-func (c *ChromeInstance) waitForChrome(timeout time.Duration) error {
+func (c *ChromeInstance) WaitForChrome(timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 

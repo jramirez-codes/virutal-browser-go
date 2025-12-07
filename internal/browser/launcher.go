@@ -86,7 +86,7 @@ func LaunchChrome(port int) (*ChromeInstance, error) {
 
 	// Wait for Chrome to be ready
 	log.Printf("Waiting for Chrome to start on port %d...", port)
-	if err := instance.waitForChrome(30 * time.Second); err != nil {
+	if err := instance.WaitForChrome(30 * time.Second); err != nil {
 		instance.Close()
 		return nil, err
 	}
