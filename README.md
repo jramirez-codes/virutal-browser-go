@@ -40,8 +40,7 @@ The system consists of three main components:
 3.  **Configure Nginx**
     Copy the provided `nginx.conf` to your Nginx configuration directory or include it in your main `nginx.conf`.
     ```bash
-    sudo cp nginx.conf /etc/nginx/sites-available/virutal-browser-go
-    sudo ln -s /etc/nginx/sites-available/virutal-browser-go /etc/nginx/sites-enabled/
+    sudo cp nginx.conf /etc/nginx/sites-enabled/virutal-browser-go
     sudo nginx -t
     sudo systemctl reload nginx
     ```
