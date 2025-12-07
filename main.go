@@ -14,7 +14,7 @@ var (
 	instanceCloseMap = make(map[string]func() error)
 	mu               sync.RWMutex
 )
-var wsUrlChannels = make(chan string, 500)
+var wsURLChannels = make(chan string, 500)
 
 func CreateInstance() (*browser.ChromeInstance, error) {
 	// Get Available Port
@@ -30,25 +30,25 @@ func CreateInstance() (*browser.ChromeInstance, error) {
 	}
 
 	// Get WebSocket URL
-	wsUrl, err := instance.GetWebSocketURL()
+	wsURL, err := instance.GetWebSocketURL()
 	if err != nil {
 		return nil, err
 	}
 
 	// Add WebSocket URL to map
 	mu.Lock()
-	wsUrlChannels <- wsUrl
-	instanceCloseMap[wsUrl] = instance.Close
+	wsURLChannels <- wsURL
+	instanceCloseMap[wsURL] = instance.Close
 	mu.Unlock()
 
 	return instance, nil
 }
 
-func StartApiServer() {
+func StartAPIServer() {
 	// API Server - Register routes
 	apiPort := ":8080"
 	http.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
-		api.GetBrowserInstanceUrl(wsUrlChannels, w, r)
+		api.GetBrowserInstanceUrl(wsURLChannels, w, r)
 
 		// Create New Instance N+1 (Preload)
 		_, err := CreateInstance()
@@ -80,7 +80,7 @@ func main() {
 	}()
 
 	// Start API Server
-	go StartApiServer()
+	go StartAPIServer()
 
 	// Keep running until interrupted
 	select {}
