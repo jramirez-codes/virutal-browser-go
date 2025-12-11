@@ -10,6 +10,8 @@ import (
 	"virtual-browser/internal/browser"
 	"virtual-browser/internal/types"
 	"virtual-browser/internal/util"
+
+	"github.com/shirou/gopsutil/v3/cpu"
 )
 
 // Global Variables
@@ -61,8 +63,26 @@ func StartAPIServer() {
 
 	// Get WebSocket URL
 	http.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
-		// Create New Instance N+1 (Preload)
 		go func() {
+			// Check the CPU Usage
+			isCpuHigh := false
+			serverStats.Mu.RLock()
+			if serverStats.CPUUsage > 80 {
+				isCpuHigh = true
+			}
+			serverStats.Mu.RUnlock()
+
+			// Wait for CPU to be low
+			for isCpuHigh {
+				time.Sleep(time.Second * 5)
+				serverStats.Mu.RLock()
+				if serverStats.CPUUsage < 80 {
+					isCpuHigh = false
+				}
+				serverStats.Mu.RUnlock()
+			}
+
+			// Create New Instance N+1 (Preload)
 			_, err := CreateInstance()
 			if err != nil {
 				log.Fatalf("Failed to create instance: %v", err)
@@ -105,7 +125,7 @@ func StartAPIServer() {
 func main() {
 	// Add WaitGroup
 	wg := &sync.WaitGroup{}
-	wg.Add(2)
+	wg.Add(3)
 
 	// Record Start Time
 	serverStats.StartTime = time.Now().Unix()
@@ -120,6 +140,17 @@ func main() {
 
 	// Start API Server
 	go StartAPIServer()
+
+	// Server Stats
+	go func() {
+		for {
+			percentCPU, _ := cpu.Percent(time.Second, false)
+			serverStats.Mu.Lock()
+			serverStats.CPUUsage = percentCPU[0]
+			serverStats.Mu.Unlock()
+			time.Sleep(time.Second * 2)
+		}
+	}()
 
 	wg.Wait()
 
