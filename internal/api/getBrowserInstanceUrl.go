@@ -15,7 +15,7 @@ func GetBrowserInstanceUrl(ch chan string, w http.ResponseWriter, r *http.Reques
 	w.Header().Set("Content-Type", "application/json")
 
 	if len(ch) == 0 {
-		response := types.ApiResponse{
+		response := types.WsApiResponse{
 			Success: false,
 			Message: "Failed to retrieve WebSocket URL",
 		}
@@ -26,7 +26,7 @@ func GetBrowserInstanceUrl(ch chan string, w http.ResponseWriter, r *http.Reques
 	// Get WebSocket URL
 	WsUrl := <-ch
 
-	response := types.ApiResponse{
+	response := types.WsApiResponse{
 		Success: true,
 		Message: "Browser Instance URL retrieved successfully",
 		WsUrl:   WsUrl,
