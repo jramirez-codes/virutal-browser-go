@@ -13,10 +13,10 @@ import (
 )
 
 // Global Variables
-var (
-	instanceCloseMap = make(map[string]func() error)
-	mu               sync.RWMutex
-)
+var instanceCloseMap = types.ServerInstanceClose{
+	InstanceCloseMapFunc: make(map[string]func() error),
+	Mu:                   sync.RWMutex{},
+}
 var wsURLChannels = make(chan string, 500)
 var serverStats = types.ServerStatsResponse{
 	StartTime:                 0,
@@ -24,6 +24,7 @@ var serverStats = types.ServerStatsResponse{
 	MemoryUsage:               0,
 	LiveChromeInstanceCount:   0,
 	ServedChromeInstanceCount: 0,
+	Mu:                        sync.RWMutex{},
 }
 
 func CreateInstance() (*browser.ChromeInstance, error) {
@@ -46,10 +47,10 @@ func CreateInstance() (*browser.ChromeInstance, error) {
 	}
 
 	// Add WebSocket URL to map
-	mu.Lock()
+	instanceCloseMap.Mu.Lock()
 	wsURLChannels <- wsURL
-	instanceCloseMap[wsURL] = instance.Close
-	mu.Unlock()
+	instanceCloseMap.InstanceCloseMapFunc[wsURL] = instance.Close
+	instanceCloseMap.Mu.Unlock()
 
 	return instance, nil
 }
@@ -60,8 +61,6 @@ func StartAPIServer() {
 
 	// Get WebSocket URL
 	http.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
-		go api.GetBrowserInstanceUrl(wsURLChannels, w, r)
-
 		// Create New Instance N+1 (Preload)
 		go func() {
 			_, err := CreateInstance()
@@ -69,17 +68,28 @@ func StartAPIServer() {
 				log.Fatalf("Failed to create instance: %v", err)
 			}
 		}()
+
+		api.GetBrowserInstanceUrl(wsURLChannels, w, r)
 	})
 
 	// Kill WebSocket URL
 	http.HandleFunc("/kill", func(w http.ResponseWriter, r *http.Request) {
-		api.KillBrowserInstance(&mu, instanceCloseMap, w, r)
+		api.KillBrowserInstance(&instanceCloseMap, w, r)
+		serverStats.Mu.Lock()
 		serverStats.ServedChromeInstanceCount++
+		serverStats.Mu.Unlock()
 	})
 
 	// Get Server Stats
 	http.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
-		serverStats.LiveChromeInstanceCount = len(wsURLChannels)
+		// Get Live Chrome Instance Count
+		instanceCloseMap.Mu.RLock()
+		serverStats.Mu.Lock()
+		serverStats.LiveChromeInstanceCount = len(instanceCloseMap.InstanceCloseMapFunc)
+		serverStats.Mu.Unlock()
+		instanceCloseMap.Mu.RUnlock()
+
+		// Return Status
 		api.GetServerStats(&serverStats, w, r)
 	})
 
@@ -93,6 +103,10 @@ func StartAPIServer() {
 }
 
 func main() {
+	// Add WaitGroup
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+
 	// Record Start Time
 	serverStats.StartTime = time.Now().Unix()
 
@@ -106,6 +120,8 @@ func main() {
 
 	// Start API Server
 	go StartAPIServer()
+
+	wg.Wait()
 
 	// Keep running until interrupted
 	select {}

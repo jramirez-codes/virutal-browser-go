@@ -1,6 +1,8 @@
 // types/api.go
 package types
 
+import "sync"
+
 // Data models
 type WsApiResponse struct {
 	Success bool   `json:"success"`
@@ -14,4 +16,10 @@ type ServerStatsResponse struct {
 	MemoryUsage               int64   `json:"memoryUsage"`
 	LiveChromeInstanceCount   int     `json:"liveChromeInstanceCount"`
 	ServedChromeInstanceCount int     `json:"servedChromeInstanceCount"`
+	Mu                        sync.RWMutex
+}
+
+type ServerInstanceClose struct {
+	InstanceCloseMapFunc map[string]func() error
+	Mu                   sync.RWMutex
 }
