@@ -6,7 +6,7 @@ import (
 	"virtual-browser/internal/types"
 )
 
-func KillBrowserInstance(instanceCloseMap *types.ServerInstanceClose, w http.ResponseWriter, r *http.Request) {
+func KillBrowserInstance(instancePoolUsed *types.InstancePoolUsed, w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -16,15 +16,9 @@ func KillBrowserInstance(instanceCloseMap *types.ServerInstanceClose, w http.Res
 	url := r.URL.Query().Get("url")
 
 	// Kill instance
-	instanceCloseFunc, ok := (*instanceCloseMap).InstanceCloseMapFunc[url]
-	if ok {
-		// Remove from map
-		(*instanceCloseMap).Mu.Lock()
-		delete((*instanceCloseMap).InstanceCloseMapFunc, url)
-		(*instanceCloseMap).Mu.Unlock()
-
+	if instancePoolUsed.InstanceMap[url] != nil {
 		// Delete Instance and Return Response if Error
-		if err := instanceCloseFunc(); err != nil {
+		if err := instancePoolUsed.InstanceMap[url].Close(); err != nil {
 			response := types.WsApiResponse{
 				Success: false,
 				Message: "Failed to kill browser instance",
@@ -32,6 +26,11 @@ func KillBrowserInstance(instanceCloseMap *types.ServerInstanceClose, w http.Res
 			json.NewEncoder(w).Encode(response)
 			return
 		}
+
+		// Remove Instance From Map
+		instancePoolUsed.Mu.Lock()
+		delete(instancePoolUsed.InstanceMap, url)
+		instancePoolUsed.Mu.Unlock()
 	} else {
 		// Not Found
 		response := types.WsApiResponse{

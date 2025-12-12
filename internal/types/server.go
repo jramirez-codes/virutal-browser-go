@@ -2,11 +2,12 @@ package types
 
 import (
 	"sync"
+	"virtual-browser/internal/browser"
 )
 
-type ServerInstanceClose struct {
-	InstanceCloseMapFunc map[string]func() error
-	Mu                   sync.RWMutex
+type InstancePoolUsed struct {
+	InstanceMap map[string]*browser.ChromeInstance
+	Mu          sync.RWMutex
 }
 
 type IsCreatingInstance struct {

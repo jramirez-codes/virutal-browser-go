@@ -91,6 +91,9 @@ func LaunchChrome(port int) (*ChromeInstance, error) {
 		return nil, err
 	}
 
+	// Get WebSocket URL
+	instance.WsURL, _ = instance.GetWebSocketURL()
+
 	log.Printf("✓ Chrome started successfully")
 	log.Printf("CDP endpoint: http://localhost:%d", port)
 

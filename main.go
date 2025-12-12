@@ -15,16 +15,16 @@ import (
 	"github.com/shirou/gopsutil/v3/mem"
 )
 
-// Global Variables
-var instanceCloseMap = types.ServerInstanceClose{
-	InstanceCloseMapFunc: make(map[string]func() error),
-	Mu:                   sync.RWMutex{},
-}
 var isCreatingInstance = types.IsCreatingInstance{
 	Status: false,
 	Mu:     sync.RWMutex{},
 }
-var wsURLChannels = make(chan string, 500)
+var instancePoolFree = make(chan *browser.ChromeInstance, 500)
+var instancePoolUsed = types.InstancePoolUsed{
+	InstanceMap: make(map[string]*browser.ChromeInstance),
+	Mu:          sync.RWMutex{},
+}
+
 var serverStats = types.ServerStatsResponse{
 	StartTime:                 0,
 	CPUUsage:                  0.0,
@@ -52,17 +52,8 @@ func CreateInstance() (*browser.ChromeInstance, error) {
 		return nil, err
 	}
 
-	// Get WebSocket URL
-	wsURL, err := instance.GetWebSocketURL()
-	if err != nil {
-		return nil, err
-	}
-
-	// Add WebSocket URL to map
-	instanceCloseMap.Mu.Lock()
-	wsURLChannels <- wsURL
-	instanceCloseMap.InstanceCloseMapFunc[wsURL] = instance.Close
-	instanceCloseMap.Mu.Unlock()
+	// Add to pool
+	instancePoolFree <- instance
 
 	// Set Creating Instance
 	isCreatingInstance.Mu.Lock()
@@ -115,12 +106,18 @@ func StartAPIServer() {
 			}
 		}()
 
-		api.GetBrowserInstanceUrl(wsURLChannels, w, r)
+		currInstance := <-instancePoolFree
+		api.GetBrowserInstanceUrl(currInstance, w, r)
+
+		// Add to used pool
+		instancePoolUsed.Mu.Lock()
+		instancePoolUsed.InstanceMap[currInstance.WsURL] = currInstance
+		instancePoolUsed.Mu.Unlock()
 	})
 
 	// Kill WebSocket URL
 	http.HandleFunc("/kill", func(w http.ResponseWriter, r *http.Request) {
-		api.KillBrowserInstance(&instanceCloseMap, w, r)
+		api.KillBrowserInstance(&instancePoolUsed, w, r)
 		serverStats.Mu.Lock()
 		serverStats.ServedChromeInstanceCount++
 		serverStats.Mu.Unlock()
@@ -135,9 +132,9 @@ func StartAPIServer() {
 		}
 		// Get Live Chrome Instance Count
 		serverStats.Mu.Lock()
-		instanceCloseMap.Mu.RLock()
-		serverStats.LiveChromeInstanceCount = len(instanceCloseMap.InstanceCloseMapFunc)
-		instanceCloseMap.Mu.RUnlock()
+		instancePoolUsed.Mu.RLock()
+		serverStats.LiveChromeInstanceCount = len(instancePoolUsed.InstanceMap) + len(instancePoolFree)
+		instancePoolUsed.Mu.RUnlock()
 
 		serverStats.MemoryUsage = int64(memoryInfo.UsedPercent)
 		serverStats.Mu.Unlock()

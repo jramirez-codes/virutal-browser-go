@@ -15,7 +15,7 @@ type ChromeInstance struct {
 	cmd         *exec.Cmd
 	userDataDir string
 	port        int
-	wsURL       string
+	WsURL       string
 }
 
 // WaitForChrome waits for Chrome to be ready
@@ -47,8 +47,8 @@ func (c *ChromeInstance) WaitForChrome(timeout time.Duration) error {
 
 // GetWebSocketURL returns the WebSocket debugger URL
 func (c *ChromeInstance) GetWebSocketURL() (string, error) {
-	if c.wsURL != "" {
-		return c.wsURL, nil
+	if c.WsURL != "" {
+		return c.WsURL, nil
 	}
 
 	output, err := exec.Command("curl", "-s", fmt.Sprintf("http://localhost:%d/json/version", c.port)).Output()
@@ -69,8 +69,8 @@ func (c *ChromeInstance) GetWebSocketURL() (string, error) {
 		return "", fmt.Errorf("webSocketDebuggerUrl not found in response")
 	}
 
-	c.wsURL = versionInfo.WebSocketDebuggerURL
-	return c.wsURL, nil
+	c.WsURL = versionInfo.WebSocketDebuggerURL
+	return c.WsURL, nil
 }
 
 // Close terminates the Chrome instance and cleans up
