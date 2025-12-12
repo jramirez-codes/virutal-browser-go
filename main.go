@@ -100,19 +100,10 @@ func StartAPIServer() {
 			}
 
 			// Create New Instance N+1 (Preload)
-			_, err := CreateInstance()
-			if err != nil {
-				log.Fatalf("Failed to create instance: %v", err)
-			}
+			CreateInstance()
 		}()
 
-		currInstance := <-instancePoolFree
-		api.GetBrowserInstanceUrl(currInstance, w, r)
-
-		// Add to used pool
-		instancePoolUsed.Mu.Lock()
-		instancePoolUsed.InstanceMap[currInstance.WsURL] = currInstance
-		instancePoolUsed.Mu.Unlock()
+		api.GetBrowserInstanceUrl(instancePoolFree, &instancePoolUsed, w, r)
 	})
 
 	// Kill WebSocket URL
@@ -157,12 +148,7 @@ func main() {
 	serverStats.StartTime = time.Now().Unix()
 
 	// Create Inital Instance N+1
-	go func() {
-		_, err := CreateInstance()
-		if err != nil {
-			log.Fatalf("Failed to create instance: %v", err)
-		}
-	}()
+	go CreateInstance()
 
 	// Start API Server
 	go StartAPIServer()
