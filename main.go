@@ -153,10 +153,6 @@ func StartAPIServer() {
 }
 
 func main() {
-	// Add WaitGroup
-	wg := &sync.WaitGroup{}
-	wg.Add(3)
-
 	// Record Start Time
 	serverStats.StartTime = time.Now().Unix()
 
@@ -181,8 +177,6 @@ func main() {
 			time.Sleep(time.Second * 2)
 		}
 	}()
-
-	wg.Wait()
 
 	// Keep running until interrupted
 	select {}
